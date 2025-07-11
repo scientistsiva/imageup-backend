@@ -123,7 +123,7 @@ app.post('/upload', (req, res) => {
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
   console.log(`Server is running at port ${PORT}`);
-});  */
+});  
 
 
 
@@ -181,5 +181,61 @@ app.post('/upload', upload.single('file'), (req, res) => {
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
+});  */
+
+const express = require('express');
+const app = express();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const cors = require('cors');
+
+// Create images folder if it doesn't exist
+const uploadDir = path.join(__dirname, 'public/images');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Middleware
+app.use(cors());
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
+
+// Multer storage config
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Name file like: file_1679658300123.jpg
+    const uniqueName = `file_${Date.now()}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  }
 });
+
+// Limit file size to 2MB
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 20 * 1024 * 1024 } // 2MB
+});
+
+// Upload route
+app.post('/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+
+  // Success response includes filename and folder for frontend to use
+  res.status(200).json({
+    message: "Uploaded to the Server!",
+    filename: req.file.filename,
+    folder: "images",
+  });
+});
+
+// Use dynamic port assigned by Render or fallback to 8000 locally
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+});   
 
